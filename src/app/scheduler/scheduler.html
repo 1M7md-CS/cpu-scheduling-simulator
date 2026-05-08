@@ -55,6 +55,9 @@
               <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
                 Waiting
               </th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+                Response
+              </th>
             }
 
             <th class="px-4 py-3 text-center text-sm font-semibold text-slate-200">Action</th>
@@ -102,6 +105,10 @@
 
                   <td class="px-4 py-3 text-amber-400 font-medium">
                     {{ process.waitingTime }}
+                  </td>
+
+                  <td class="px-4 py-3 text-rose-400 font-medium">
+                    {{ process.responseTime }}
                   </td>
                 }
 
@@ -176,12 +183,19 @@
       <section class="mb-8 bg-slate-800 rounded-lg p-4 sm:p-6">
         <h2 class="text-xl font-semibold text-slate-200 mb-4">Statistics</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div class="bg-slate-700/50 rounded-lg p-4 text-center">
             <div class="text-2xl font-bold text-emerald-400">
               {{ avgWaitingTime().toFixed(2) }}
             </div>
             <div class="text-sm text-slate-400">Avg Waiting Time</div>
+          </div>
+
+          <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-emerald-400">
+              {{ avgResponseTime().toFixed(2) }}
+            </div>
+            <div class="text-sm text-slate-400">Avg Response Time</div>
           </div>
 
           <div class="bg-slate-700/50 rounded-lg p-4 text-center">
@@ -212,30 +226,41 @@
 
         <div class="overflow-x-auto pb-4">
           <div class="relative h-24 bg-slate-700/30 rounded-lg min-w-full">
-            @for (block of ganttBlocks(); track block.startTime + '-' + block.processId) {
-              <div
-                class="absolute top-2 bottom-2 rounded-md flex items-center justify-center font-bold text-white shadow-lg transition-all"
-                [class]="getColorForProcess(block.processId)"
-                [style.left]="getBlockLeft(block.startTime)"
-                [style.width]="getBlockWidth(block.startTime, block.endTime)"
-              >
-                <span class="text-sm">P{{ block.processId }}</span>
-              </div>
+            @for (block of timelineBlocks(); track block.startTime) {
+              @if (block.isIdle) {
+                <div
+                  class="absolute top-2 bottom-2 flex items-center justify-center text-xs text-slate-500 italic"
+                  [style.left]="getBlockLeft(block.startTime)"
+                  [style.width]="getBlockWidth(block.startTime, block.completionTime)"
+                >
+                  Idle
+                </div>
+              } @else {
+                <div
+                  class="absolute top-2 bottom-2 rounded-md flex items-center justify-center font-bold text-white shadow-lg transition-all"
+                  [class]="getColorForProcess(block.processId)"
+                  [style.left]="getBlockLeft(block.startTime)"
+                  [style.width]="getBlockWidth(block.startTime, block.completionTime)"
+                >
+                  <span class="text-sm">P{{ block.processId }}</span>
+                </div>
+              }
             }
           </div>
 
           <div class="flex mt-2 text-xs text-slate-400">
-            @for (block of ganttBlocks(); track block.startTime + '-' + block.processId) {
+            @for (block of timelineBlocks(); track block.startTime) {
               <div
-                class="text-center"
-                [style.width]="getBlockWidth(block.startTime, block.endTime)"
+                class="text-left pl-0.5"
+                [class.text-slate-600]="block.isIdle"
+                [style.width]="getBlockWidth(block.startTime, block.completionTime)"
               >
                 {{ block.startTime }}
               </div>
             }
 
-            <div class="text-center">
-              {{ ganttBlocks()[ganttBlocks().length - 1]?.endTime }}
+            <div class="text-left pl-0.5">
+              {{ ganttBlocks()[ganttBlocks().length - 1]?.completionTime }}
             </div>
           </div>
         </div>

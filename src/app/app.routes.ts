@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from './services/authenticate.service';
+import { AuthenticateService } from './services/authenticate.service';
 
 export const authGuard = () => {
-  const authService = inject(AuthService);
+  const authService = inject(AuthenticateService);
   if (authService.currentUser()) {
     return true;
   }

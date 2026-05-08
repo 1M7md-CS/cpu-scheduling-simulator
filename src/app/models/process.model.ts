@@ -5,13 +5,14 @@ export interface Process {
   completionTime: number;
   turnaroundTime: number;
   waitingTime: number;
+  responseTime: number;
   remainingTime?: number;
 }
 
 export interface GanttBlock {
   processId: number;
   startTime: number;
-  endTime: number;
+  completionTime: number;
 }
 
 export type SimulationResult = {

@@ -1,9 +1,9 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Process, GanttBlock, Algorithm } from '../models/process.model';
 import { SchedulerService } from '../services/scheduler.service';
-import { AuthService } from '../services/authenticate.service';
+import { AuthenticateService } from '../services/authenticate.service';
 
 @Component({
   selector: 'app-scheduler',
@@ -20,6 +20,7 @@ export class Scheduler {
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
+      responseTime: 0,
     },
     {
       id: 2,
@@ -28,6 +29,7 @@ export class Scheduler {
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
+      responseTime: 0,
     },
     {
       id: 3,
@@ -36,6 +38,7 @@ export class Scheduler {
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
+      responseTime: 0,
     },
     {
       id: 4,
@@ -44,6 +47,7 @@ export class Scheduler {
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
+      responseTime: 0,
     },
   ]);
 
@@ -52,16 +56,51 @@ export class Scheduler {
   ganttBlocks = signal<GanttBlock[]>([]);
   hasRun = signal<boolean>(false);
 
+  timelineBlocks = computed(() => {
+    const blocks = this.ganttBlocks();
+    const merged: (GanttBlock & { isIdle: boolean })[] = [];
+    let cursor = 0;
+
+    for (const block of blocks) {
+      if (block.startTime > cursor) {
+        merged.push({ processId: -1, startTime: cursor, completionTime: block.startTime, isIdle: true });
+      }
+
+      merged.push({ ...block, isIdle: false });
+      cursor = block.completionTime;
+    }
+
+    return merged;
+  });
+
   avgWaitingTime = computed(() => {
     const process = this.processes();
-    if (process.length === 0) return 0;
+
+    if (process.length === 0) {
+      return 0;
+    }
+
     return process.reduce((sum, p) => sum + p.waitingTime, 0) / process.length;
   });
 
   avgTurnaroundTime = computed(() => {
     const process = this.processes();
-    if (process.length === 0) return 0;
+
+    if (process.length === 0) {
+      return 0;
+    }
+
     return process.reduce((sum, p) => sum + p.turnaroundTime, 0) / process.length;
+  });
+
+  avgResponseTime = computed(() => {
+    const process = this.processes();
+
+    if (process.length === 0) {
+      return 0;
+    }
+
+    return process.reduce((sum, p) => sum + p.responseTime, 0) / process.length;
   });
 
   totalBurstTime = computed(() => {
@@ -79,10 +118,11 @@ export class Scheduler {
     8: 'bg-teal-500',
   };
 
-  private authService = inject(AuthService);
-  private router = inject(Router);
-
-  constructor(private schedulerService: SchedulerService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthenticateService,
+    private schedulerService: SchedulerService,
+  ) {}
 
   logout(): void {
     this.authService.logout();
@@ -91,6 +131,7 @@ export class Scheduler {
 
   addProcess(): void {
     const newId = Math.max(0, ...this.processes().map((p) => p.id)) + 1;
+
     this.processes.update((process) => [
       ...process,
       {
@@ -100,6 +141,7 @@ export class Scheduler {
         completionTime: 0,
         turnaroundTime: 0,
         waitingTime: 0,
+        responseTime: 0,
       },
     ]);
   }
@@ -114,6 +156,7 @@ export class Scheduler {
       this.selectedAlgorithm(),
       this.timeQuantum(),
     );
+
     this.processes.set(result.processes);
     this.ganttBlocks.set(result.ganttBlocks);
     this.hasRun.set(true);
@@ -121,6 +164,7 @@ export class Scheduler {
 
   updateProcessValue(process: Process, field: keyof Process, value: string): void {
     const numValue = parseInt(value, 10);
+
     if (!isNaN(numValue) && numValue >= 0) {
       this.processes.update((procs) =>
         procs.map((p) => (p.id === process.id ? { ...p, [field]: numValue } : p)),
@@ -129,20 +173,23 @@ export class Scheduler {
   }
 
   getColorForProcess(id: number): string {
-    return this.processColors[(id - 1) % 8] || 'bg-gray-500';
+    return this.processColors[((id - 1) % 8) + 1] || 'bg-gray-500';
+  }
+
+  private getTotalTime(): number {
+    const blocks = this.ganttBlocks();
+    return blocks.length > 0 ? blocks[blocks.length - 1].completionTime : 1;
   }
 
   getBlockWidth(startTime: number, endTime: number): string {
-    const totalTime =
-      this.totalBurstTime() + Math.max(...this.processes().map((p) => p.arrivalTime));
-    const scale = 100 / Math.max(totalTime, 1);
+    const scale = 100 / this.getTotalTime();
+
     return `${(endTime - startTime) * scale}%`;
   }
 
   getBlockLeft(startTime: number): string {
-    const totalTime =
-      this.totalBurstTime() + Math.max(...this.processes().map((p) => p.arrivalTime));
-    const scale = 100 / Math.max(totalTime, 1);
+    const scale = 100 / this.getTotalTime();
+
     return `${startTime * scale}%`;
   }
 }

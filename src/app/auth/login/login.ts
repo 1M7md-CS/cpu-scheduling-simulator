@@ -1,7 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Form } from '../form/form';
-import { AuthService } from '../../services/authenticate.service';
+import { AuthenticateService } from '../../services/authenticate.service';
 
 type Data = {
   email: string;
@@ -15,7 +15,7 @@ type Data = {
   styleUrl: './login.css',
 })
 export class Login {
-  private authService = inject(AuthService);
+  private authService = inject(AuthenticateService);
   private router = inject(Router);
 
   message = signal('');

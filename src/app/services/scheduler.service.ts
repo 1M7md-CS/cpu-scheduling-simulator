@@ -7,7 +7,10 @@ import type { SimulationResult } from '../models/process.model';
 })
 export class SchedulerService {
   simulate(processes: Process[], algorithm: Algorithm, timeQuantum = 4): SimulationResult {
-    const copiedProcesses = processes.map((process) => ({ ...process }));
+    const copiedProcesses = processes.map((process) => ({
+      ...process,
+      responseTime: -1,
+    }));
 
     if (algorithm === 'FCFS') {
       return this.fcfs(copiedProcesses);
@@ -34,15 +37,18 @@ export class SchedulerService {
       currentTime = Math.max(currentTime, process.arrivalTime);
 
       const startTime = currentTime;
-      const endTime = startTime + process.burstTime;
+      const completionTime = startTime + process.burstTime;
 
-      this.finishProcess(process, endTime);
-      this.addGanttBlock(ganttBlocks, process.id, startTime, endTime);
+      this.finishProcess(process, startTime, completionTime);
+      this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
 
-      currentTime = endTime;
+      currentTime = completionTime;
     }
 
-    return { processes: sortedProcesses, ganttBlocks };
+    return {
+      processes: sortedProcesses,
+      ganttBlocks,
+    };
   }
 
   private sjf(processes: Process[]): SimulationResult {
@@ -74,19 +80,26 @@ export class SchedulerService {
       const process = availableProcesses[0];
 
       const startTime = currentTime;
-      const endTime = startTime + process.burstTime;
+      const completionTime = startTime + process.burstTime;
 
-      this.finishProcess(process, endTime);
-      this.addGanttBlock(ganttBlocks, process.id, startTime, endTime);
+      this.finishProcess(process, startTime, completionTime);
+      this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
 
       completedProcesses.push(process);
-      currentTime = endTime;
+      currentTime = completionTime;
     }
 
-    return { processes: sortedProcesses, ganttBlocks };
+    return {
+      processes: sortedProcesses,
+      ganttBlocks,
+    };
   }
 
   private roundRobin(processes: Process[], timeQuantum: number): SimulationResult {
+    if (timeQuantum <= 0) {
+      timeQuantum = 1;
+    }
+
     const sortedProcesses = this.sortByArrival(processes);
     const queue: Process[] = [];
     const ganttBlocks: GanttBlock[] = [];
@@ -96,6 +109,7 @@ export class SchedulerService {
 
     for (const process of sortedProcesses) {
       process.remainingTime = process.burstTime;
+      process.responseTime = -1;
     }
 
     while (this.hasUnfinishedProcesses(sortedProcesses)) {
@@ -115,11 +129,16 @@ export class SchedulerService {
       const process = queue.shift()!;
 
       const startTime = currentTime;
+
+      if (process.responseTime === -1 || process.responseTime === undefined) {
+        process.responseTime = startTime - process.arrivalTime;
+      }
+
       const executeTime = Math.min(process.remainingTime ?? 0, timeQuantum);
-      const endTime = startTime + executeTime;
+      const completionTime = startTime + executeTime;
 
       process.remainingTime = (process.remainingTime ?? 0) - executeTime;
-      currentTime = endTime;
+      currentTime = completionTime;
 
       while (
         nextProcessIndex < sortedProcesses.length &&
@@ -132,23 +151,30 @@ export class SchedulerService {
       if ((process.remainingTime ?? 0) > 0) {
         queue.push(process);
       } else {
-        this.finishProcess(process, currentTime);
+        this.finishProcess(process, startTime, completionTime);
       }
 
-      this.addGanttBlock(ganttBlocks, process.id, startTime, endTime);
+      this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
     }
 
-    return { processes: sortedProcesses, ganttBlocks };
+    return {
+      processes: sortedProcesses,
+      ganttBlocks,
+    };
   }
 
   private sortByArrival(processes: Process[]): Process[] {
     return [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
   }
 
-  private finishProcess(process: Process, completionTime: number): void {
+  private finishProcess(process: Process, startTime: number, completionTime: number): void {
     process.completionTime = completionTime;
     process.turnaroundTime = completionTime - process.arrivalTime;
     process.waitingTime = process.turnaroundTime - process.burstTime;
+
+    if (process.responseTime === -1 || process.responseTime === undefined) {
+      process.responseTime = startTime - process.arrivalTime;
+    }
   }
 
   private hasUnfinishedProcesses(processes: Process[]): boolean {
@@ -159,19 +185,19 @@ export class SchedulerService {
     ganttBlocks: GanttBlock[],
     processId: number,
     startTime: number,
-    endTime: number,
+    completionTime: number,
   ): void {
     const lastBlock = ganttBlocks[ganttBlocks.length - 1];
 
-    if (lastBlock?.processId === processId && lastBlock.endTime === startTime) {
-      lastBlock.endTime = endTime;
+    if (lastBlock?.processId === processId && lastBlock.completionTime === startTime) {
+      lastBlock.completionTime = completionTime;
       return;
     }
 
     ganttBlocks.push({
       processId,
       startTime,
-      endTime,
+      completionTime,
     });
   }
 }

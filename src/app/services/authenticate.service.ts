@@ -5,7 +5,7 @@ import type { User, AuthResult } from '../models/auth.model';
 @Injectable({
   providedIn: 'root',
 })
-export class AuthService {
+export class AuthenticateService {
   private readonly EMAIL_REGEX = /^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/;
   currentUser = signal<User | null>(null);
 
