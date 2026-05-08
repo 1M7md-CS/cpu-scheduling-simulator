@@ -1,0 +1,245 @@
+<div class="min-h-screen bg-slate-900 text-slate-100 p-4 sm:p-8">
+  <div class="max-w-6xl mx-auto">
+    <header class="mb-10 flex flex-col items-center gap-4 text-center sm:relative sm:block">
+      <div>
+        <h1
+          class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent"
+        >
+          CPU Scheduling Simulator
+        </h1>
+
+        <p class="text-slate-400 mt-2 text-sm sm:text-base">
+          Visualize FCFS, SJF, and Round Robin algorithms
+        </p>
+      </div>
+
+      <button
+        (click)="logout()"
+        class="w-full max-w-xs sm:w-auto sm:absolute sm:top-0 sm:right-0 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-medium transition-colors"
+      >
+        Logout
+      </button>
+    </header>
+
+    <section class="mb-8">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+        <h2 class="text-xl font-semibold text-slate-200">Process Table</h2>
+
+        <button
+          (click)="addProcess()"
+          class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-medium transition-colors"
+        >
+          + Add Process
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full bg-slate-800 rounded-lg overflow-hidden">
+          <thead class="bg-slate-700">
+          <tr>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">PID</th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+              Arrival Time
+            </th>
+            <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+              Burst Time
+            </th>
+
+            @if (hasRun()) {
+              <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+                Completion
+              </th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+                Turnaround
+              </th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+                Waiting
+              </th>
+            }
+
+            <th class="px-4 py-3 text-center text-sm font-semibold text-slate-200">Action</th>
+          </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-700">
+            @for (process of processes(); track process.id) {
+              <tr class="hover:bg-slate-700/50 transition-colors">
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full"
+                    [class]="getColorForProcess(process.id) + ' text-white font-bold text-sm'"
+                  >
+                    {{ process.id }}
+                  </span>
+                </td>
+
+                <td class="px-4 py-3">
+                  <input
+                    type="number"
+                    [value]="process.arrivalTime"
+                    (change)="updateProcessValue(process, 'arrivalTime', $any($event.target).value)"
+                    class="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-100 focus:border-emerald-500 focus:outline-none"
+                  />
+                </td>
+
+                <td class="px-4 py-3">
+                  <input
+                    type="number"
+                    [value]="process.burstTime"
+                    (change)="updateProcessValue(process, 'burstTime', $any($event.target).value)"
+                    class="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-100 focus:border-emerald-500 focus:outline-none"
+                  />
+                </td>
+
+                @if (hasRun()) {
+                  <td class="px-4 py-3 text-cyan-400 font-medium">
+                    {{ process.completionTime }}
+                  </td>
+
+                  <td class="px-4 py-3 text-emerald-400 font-medium">
+                    {{ process.turnaroundTime }}
+                  </td>
+
+                  <td class="px-4 py-3 text-amber-400 font-medium">
+                    {{ process.waitingTime }}
+                  </td>
+                }
+
+                <td class="px-4 py-3 text-center">
+                  <button
+                    (click)="removeProcess(process.id)"
+                    class="text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-8 bg-slate-800 rounded-lg p-4 sm:p-6">
+      <h2 class="text-xl font-semibold text-slate-200 mb-4">Control Panel</h2>
+
+      <div class="flex flex-col lg:flex-row lg:items-center gap-6">
+        <div class="grid grid-cols-3 sm:flex gap-2">
+          @for (algo of ['FCFS', 'SJF', 'RR']; track algo) {
+            <button
+              (click)="selectedAlgorithm.set($any(algo))"
+              [class.bg-emerald-600]="selectedAlgorithm() === algo"
+              [class.hover:bg-emerald-500]="selectedAlgorithm() === algo"
+              [class.bg-slate-700]="selectedAlgorithm() !== algo"
+              [class.hover:bg-slate-600]="selectedAlgorithm() !== algo"
+              class="px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              {{ algo }}
+            </button>
+          }
+        </div>
+
+        @if (selectedAlgorithm() === 'RR') {
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <label class="text-slate-300">Time Quantum:</label>
+
+            <input
+              type="number"
+              [(ngModel)]="timeQuantum"
+              min="1"
+              class="w-full sm:w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+        }
+
+        <button
+          (click)="runSimulation()"
+          class="w-full lg:w-auto px-6 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 rounded-lg font-semibold transition-all shadow-lg shadow-emerald-500/20"
+        >
+          Run Simulation
+        </button>
+      </div>
+    </section>
+
+    @if (hasRun()) {
+      <section class="mb-8 bg-slate-800 rounded-lg p-4 sm:p-6">
+        <h2 class="text-xl font-semibold text-slate-200 mb-4">Statistics</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-emerald-400">
+              {{ avgWaitingTime().toFixed(2) }}
+            </div>
+            <div class="text-sm text-slate-400">Avg Waiting Time</div>
+          </div>
+
+          <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-cyan-400">
+              {{ avgTurnaroundTime().toFixed(2) }}
+            </div>
+            <div class="text-sm text-slate-400">Avg Turnaround Time</div>
+          </div>
+
+          <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-purple-400">
+              {{ processes().length }}
+            </div>
+            <div class="text-sm text-slate-400">Total Processes</div>
+          </div>
+
+          <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-amber-400">
+              {{ totalBurstTime() }}
+            </div>
+            <div class="text-sm text-slate-400">Total Burst Time</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-slate-800 rounded-lg p-4 sm:p-6">
+        <h2 class="text-xl font-semibold text-slate-200 mb-4">Gantt Chart</h2>
+
+        <div class="overflow-x-auto pb-4">
+          <div class="relative h-24 bg-slate-700/30 rounded-lg min-w-full">
+            @for (block of ganttBlocks(); track block.startTime + '-' + block.processId) {
+              <div
+                class="absolute top-2 bottom-2 rounded-md flex items-center justify-center font-bold text-white shadow-lg transition-all"
+                [class]="getColorForProcess(block.processId)"
+                [style.left]="getBlockLeft(block.startTime)"
+                [style.width]="getBlockWidth(block.startTime, block.endTime)"
+              >
+                <span class="text-sm">P{{ block.processId }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="flex mt-2 text-xs text-slate-400">
+            @for (block of ganttBlocks(); track block.startTime + '-' + block.processId) {
+              <div
+                class="text-center"
+                [style.width]="getBlockWidth(block.startTime, block.endTime)"
+              >
+                {{ block.startTime }}
+              </div>
+            }
+
+            <div class="text-center">
+              {{ ganttBlocks()[ganttBlocks().length - 1]?.endTime }}
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+</div>

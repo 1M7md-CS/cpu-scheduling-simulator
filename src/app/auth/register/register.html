@@ -1,0 +1,13 @@
+<app-form
+  logoText="Sign Up"
+  title="Create account"
+  subtitle="Get started with secure authentication"
+  passwordPlaceholder="Create a password (min 6 chars)"
+  buttonText="Create Account"
+  toggleText="Already have an account?"
+  toggleLinkText="Sign in"
+  [message]="message()"
+  [messageType]="messageType()"
+  (submitted)="onSubmit($event)"
+  (toggleClicked)="goToLogin()"
+/>

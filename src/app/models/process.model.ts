@@ -1,0 +1,22 @@
+export interface Process {
+  id: number;
+  arrivalTime: number;
+  burstTime: number;
+  completionTime: number;
+  turnaroundTime: number;
+  waitingTime: number;
+  remainingTime?: number;
+}
+
+export interface GanttBlock {
+  processId: number;
+  startTime: number;
+  endTime: number;
+}
+
+export type SimulationResult = {
+  processes: Process[];
+  ganttBlocks: GanttBlock[];
+};
+
+export type Algorithm = 'FCFS' | 'SJF' | 'RR';

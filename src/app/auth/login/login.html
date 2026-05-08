@@ -1,0 +1,13 @@
+<app-form
+  logoText="Login"
+  title="Welcome back"
+  subtitle="Sign in to your account"
+  passwordPlaceholder="Enter your password"
+  buttonText="Sign In"
+  toggleText="Don't have an account?"
+  toggleLinkText="Sign up"
+  [message]="message()"
+  [messageType]="messageType()"
+  (submitted)="onSubmit($event)"
+  (toggleClicked)="goToRegister()"
+/>
