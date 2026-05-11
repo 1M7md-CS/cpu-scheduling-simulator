@@ -1,5 +1,8 @@
 # CPU Scheduling Simulator
 
+Live Demo:
+https://1m7md-cs.github.io/cpu-scheduling-simulator/login
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.5.
 
 ## Development server
