@@ -109,7 +109,6 @@ export class SchedulerService {
 
     for (const process of sortedProcesses) {
       process.remainingTime = process.burstTime;
-      process.responseTime = -1;
     }
 
     while (this.hasUnfinishedProcesses(sortedProcesses)) {
