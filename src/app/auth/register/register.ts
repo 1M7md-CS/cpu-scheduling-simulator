@@ -12,7 +12,6 @@ type Data = {
   selector: 'app-register',
   imports: [Form, Form],
   templateUrl: './register.html',
-  styleUrl: './register.css',
 })
 export class Register {
   private authService = inject(AuthenticateService);

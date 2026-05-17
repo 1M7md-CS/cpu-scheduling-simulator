@@ -6,6 +6,7 @@ export interface Process {
   turnaroundTime: number;
   waitingTime: number;
   responseTime: number;
+  priority: number;
   remainingTime?: number;
 }
 
@@ -20,4 +21,4 @@ export type SimulationResult = {
   ganttBlocks: GanttBlock[];
 };
 
-export type Algorithm = 'FCFS' | 'SJF' | 'RR';
+export type Algorithm = 'FCFS' | 'SJF' | 'Priority';

@@ -1,7 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Process, GanttBlock, Algorithm } from '../models/process.model';
+import { Process, GanttBlock, Algorithm } from '../models/scheduler.model';
 import { SchedulerService } from '../services/scheduler.service';
 import { AuthenticateService } from '../services/authenticate.service';
 
@@ -9,7 +9,6 @@ import { AuthenticateService } from '../services/authenticate.service';
   selector: 'app-scheduler',
   imports: [FormsModule],
   templateUrl: './scheduler.html',
-  styleUrl: './scheduler.css',
 })
 export class Scheduler {
   processes = signal<Process[]>([
@@ -17,6 +16,7 @@ export class Scheduler {
       id: 1,
       arrivalTime: 0,
       burstTime: 5,
+      priority: 2,
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
@@ -26,6 +26,7 @@ export class Scheduler {
       id: 2,
       arrivalTime: 1,
       burstTime: 3,
+      priority: 1,
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
@@ -35,6 +36,7 @@ export class Scheduler {
       id: 3,
       arrivalTime: 2,
       burstTime: 8,
+      priority: 3,
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
@@ -44,6 +46,7 @@ export class Scheduler {
       id: 4,
       arrivalTime: 3,
       burstTime: 2,
+      priority: 1,
       completionTime: 0,
       turnaroundTime: 0,
       waitingTime: 0,
@@ -52,7 +55,6 @@ export class Scheduler {
   ]);
 
   selectedAlgorithm = signal<Algorithm>('FCFS');
-  timeQuantum = signal<number>(4);
   ganttBlocks = signal<GanttBlock[]>([]);
   hasRun = signal<boolean>(false);
 
@@ -63,7 +65,12 @@ export class Scheduler {
 
     for (const block of blocks) {
       if (block.startTime > cursor) {
-        merged.push({ processId: -1, startTime: cursor, completionTime: block.startTime, isIdle: true });
+        merged.push({
+          processId: -1,
+          startTime: cursor,
+          completionTime: block.startTime,
+          isIdle: true,
+        });
       }
 
       merged.push({ ...block, isIdle: false });
@@ -138,6 +145,7 @@ export class Scheduler {
         id: newId,
         arrivalTime: 0,
         burstTime: 1,
+        priority: 1,
         completionTime: 0,
         turnaroundTime: 0,
         waitingTime: 0,
@@ -151,11 +159,7 @@ export class Scheduler {
   }
 
   runSimulation(): void {
-    const result = this.schedulerService.simulate(
-      this.processes(),
-      this.selectedAlgorithm(),
-      this.timeQuantum(),
-    );
+    const result = this.schedulerService.simulate(this.processes(), this.selectedAlgorithm());
 
     this.processes.set(result.processes);
     this.ganttBlocks.set(result.ganttBlocks);

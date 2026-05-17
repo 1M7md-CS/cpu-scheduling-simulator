@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import * as bcrypt from 'bcryptjs';
-import type { User, AuthResult } from '../models/auth.model';
+import type { User, AuthResult } from '../models/authenticate.model';
 
 @Injectable({
   providedIn: 'root',

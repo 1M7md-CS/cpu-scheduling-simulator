@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Algorithm, GanttBlock, Process } from '../models/process.model';
-import type { SimulationResult } from '../models/process.model';
+import { Algorithm, GanttBlock, Process } from '../models/scheduler.model';
+import type { SimulationResult } from '../models/scheduler.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SchedulerService {
-  simulate(processes: Process[], algorithm: Algorithm, timeQuantum = 4): SimulationResult {
+  simulate(processes: Process[], algorithm: Algorithm): SimulationResult {
     const copiedProcesses = processes.map((process) => ({
       ...process,
       responseTime: -1,
@@ -20,8 +20,8 @@ export class SchedulerService {
       return this.sjf(copiedProcesses);
     }
 
-    if (algorithm === 'RR') {
-      return this.roundRobin(copiedProcesses, timeQuantum);
+    if (algorithm === 'Priority') {
+      return this.priority(copiedProcesses);
     }
 
     return this.fcfs(copiedProcesses);
@@ -95,65 +95,39 @@ export class SchedulerService {
     };
   }
 
-  private roundRobin(processes: Process[], timeQuantum: number): SimulationResult {
-    if (timeQuantum <= 0) {
-      timeQuantum = 1;
-    }
-
+  private priority(processes: Process[]): SimulationResult {
     const sortedProcesses = this.sortByArrival(processes);
-    const queue: Process[] = [];
+
+    const completed: Process[] = [];
     const ganttBlocks: GanttBlock[] = [];
 
     let currentTime = 0;
-    let nextProcessIndex = 0;
 
-    for (const process of sortedProcesses) {
-      process.remainingTime = process.burstTime;
-    }
+    while (completed.length < sortedProcesses.length) {
+      const process = sortedProcesses
+        .filter((p) => p.arrivalTime <= currentTime && !completed.includes(p))
+        .sort((a, b) => a.priority - b.priority)[0];
 
-    while (this.hasUnfinishedProcesses(sortedProcesses)) {
-      while (
-        nextProcessIndex < sortedProcesses.length &&
-        sortedProcesses[nextProcessIndex].arrivalTime <= currentTime
-      ) {
-        queue.push(sortedProcesses[nextProcessIndex]);
-        nextProcessIndex++;
-      }
+      if (!process) {
+        const nextProcess = sortedProcesses.find((p) => !completed.includes(p));
 
-      if (queue.length === 0) {
-        currentTime = sortedProcesses[nextProcessIndex].arrivalTime;
+        if (nextProcess) {
+          currentTime = nextProcess.arrivalTime;
+        }
+
         continue;
       }
 
-      const process = queue.shift()!;
-
       const startTime = currentTime;
+      const completionTime = startTime + process.burstTime;
 
-      if (process.responseTime === -1 || process.responseTime === undefined) {
-        process.responseTime = startTime - process.arrivalTime;
-      }
-
-      const executeTime = Math.min(process.remainingTime ?? 0, timeQuantum);
-      const completionTime = startTime + executeTime;
-
-      process.remainingTime = (process.remainingTime ?? 0) - executeTime;
-      currentTime = completionTime;
-
-      while (
-        nextProcessIndex < sortedProcesses.length &&
-        sortedProcesses[nextProcessIndex].arrivalTime <= currentTime
-      ) {
-        queue.push(sortedProcesses[nextProcessIndex]);
-        nextProcessIndex++;
-      }
-
-      if ((process.remainingTime ?? 0) > 0) {
-        queue.push(process);
-      } else {
-        this.finishProcess(process, startTime, completionTime);
-      }
+      this.finishProcess(process, startTime, completionTime);
 
       this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
+
+      completed.push(process);
+
+      currentTime = completionTime;
     }
 
     return {
@@ -174,10 +148,6 @@ export class SchedulerService {
     if (process.responseTime === -1 || process.responseTime === undefined) {
       process.responseTime = startTime - process.arrivalTime;
     }
-  }
-
-  private hasUnfinishedProcesses(processes: Process[]): boolean {
-    return processes.some((process) => (process.remainingTime ?? 0) > 0);
   }
 
   private addGanttBlock(

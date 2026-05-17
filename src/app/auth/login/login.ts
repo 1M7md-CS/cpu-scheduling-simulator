@@ -12,7 +12,6 @@ type Data = {
   selector: 'app-login',
   imports: [Form, Form],
   templateUrl: './login.html',
-  styleUrl: './login.css',
 })
 export class Login {
   private authService = inject(AuthenticateService);

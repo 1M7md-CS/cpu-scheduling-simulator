@@ -9,7 +9,7 @@
         </h1>
 
         <p class="text-slate-400 mt-2 text-sm sm:text-base">
-          Visualize FCFS, SJF, and Round Robin algorithms
+          Visualize FCFS, SJF, and Priority algorithms
         </p>
       </div>
 
@@ -44,6 +44,11 @@
             <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
               Burst Time
             </th>
+            @if (selectedAlgorithm() === 'Priority') {
+              <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
+                Priority
+              </th>
+            }
 
             @if (hasRun()) {
               <th class="px-4 py-3 text-left text-sm font-semibold text-slate-200">
@@ -94,6 +99,17 @@
                   />
                 </td>
 
+                @if (selectedAlgorithm() === 'Priority') {
+                  <td class="px-4 py-3">
+                    <input
+                      type="number"
+                      [value]="process.priority"
+                      (change)="updateProcessValue(process, 'priority', $any($event.target).value)"
+                      class="w-20 px-2 py-1 bg-slate-700 border border-slate-600 rounded text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    />
+                  </td>
+                }
+
                 @if (hasRun()) {
                   <td class="px-4 py-3 text-cyan-400 font-medium">
                     {{ process.completionTime }}
@@ -143,7 +159,7 @@
 
       <div class="flex flex-col lg:flex-row lg:items-center gap-6">
         <div class="grid grid-cols-3 sm:flex gap-2">
-          @for (algo of ['FCFS', 'SJF', 'RR']; track algo) {
+          @for (algo of ['FCFS', 'SJF', 'Priority']; track algo) {
             <button
               (click)="selectedAlgorithm.set($any(algo))"
               [class.bg-emerald-600]="selectedAlgorithm() === algo"
@@ -156,19 +172,6 @@
             </button>
           }
         </div>
-
-        @if (selectedAlgorithm() === 'RR') {
-          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-            <label class="text-slate-300">Time Quantum:</label>
-
-            <input
-              type="number"
-              [(ngModel)]="timeQuantum"
-              min="1"
-              class="w-full sm:w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-        }
 
         <button
           (click)="runSimulation()"
