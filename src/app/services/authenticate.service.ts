@@ -6,16 +6,14 @@ import type { User, AuthResult } from '../models/authenticate.model';
   providedIn: 'root',
 })
 export class AuthenticateService {
-  private readonly EMAIL_REGEX = /^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/;
+  private readonly EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+  private readonly MAX_ATTEMPTS = 5;
+  private readonly BLOCK_TIME = 60 * 1000;
+
   currentUser = signal<User | null>(null);
 
   private getUsers(): User[] {
-    const users = localStorage.getItem('users');
-    return users ? JSON.parse(users) : [];
-  }
-
-  private isValidEmail(email: string): boolean {
-    return this.EMAIL_REGEX.test(email);
+    return JSON.parse(localStorage.getItem('users') || '[]');
   }
 
   private saveUsers(users: User[]): void {
@@ -52,7 +50,7 @@ export class AuthenticateService {
       return this.fail('Email and password are required.');
     }
 
-    if (!this.isValidEmail(normalizedEmail)) {
+    if (!this.EMAIL_REGEX.test(normalizedEmail)) {
       return this.fail('Please enter a valid email address.');
     }
 
@@ -70,13 +68,14 @@ export class AuthenticateService {
 
     const passwordHash = await bcrypt.hash(normalizedPassword, 10);
 
-    const newUser: User = {
+    users.push({
       email: normalizedEmail,
-      passwordHash: passwordHash,
+      passwordHash,
       createdAt: Date.now(),
-    };
+      attempts: 0,
+      blockedUntil: null,
+    });
 
-    users.push(newUser);
     this.saveUsers(users);
 
     return this.success('Registration successful!');
@@ -95,14 +94,35 @@ export class AuthenticateService {
     const user = users.find((user) => user.email === normalizedEmail);
 
     if (!user) {
-      return this.fail('Invalid credentials.');
+      return this.fail('Invalid login. Please check your email and password.');
+    }
+
+    const now = Date.now();
+
+    if (user.blockedUntil && now < user.blockedUntil) {
+      const seconds = Math.ceil((user.blockedUntil - now) / 1000);
+      return this.fail(`Too many attempts. Try again in ${seconds} seconds.`);
     }
 
     const passwordIsValid = await bcrypt.compare(normalizedPassword, user.passwordHash);
 
     if (!passwordIsValid) {
-      return this.fail('Invalid credentials.');
+      user.attempts++;
+
+      if (user.attempts >= this.MAX_ATTEMPTS) {
+        user.attempts = 0;
+        user.blockedUntil = now + this.BLOCK_TIME;
+      }
+
+      this.saveUsers(users);
+
+      return this.fail('Invalid login. Please check your email and password.');
     }
+
+    user.attempts = 0;
+    user.blockedUntil = null;
+
+    this.saveUsers(users);
 
     this.currentUser.set(user);
 
