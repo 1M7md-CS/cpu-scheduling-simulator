@@ -6,7 +6,7 @@ import type { User, AuthResult } from '../models/authenticate.model';
   providedIn: 'root',
 })
 export class AuthenticateService {
-  private readonly EMAIL_REGEX = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
+  private readonly EMAIL_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._-]*@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
   private readonly MAX_ATTEMPTS = 5;
   private readonly BLOCK_TIME = 60 * 1000;
 
@@ -94,7 +94,7 @@ export class AuthenticateService {
     const user = users.find((user) => user.email === normalizedEmail);
 
     if (!user) {
-      return this.fail('Invalid login. Please check your email and password.');
+      return this.fail('Invalid email or password.');
     }
 
     const now = Date.now();
@@ -116,7 +116,7 @@ export class AuthenticateService {
 
       this.saveUsers(users);
 
-      return this.fail('Invalid login. Please check your email and password.');
+      return this.fail('Invalid email or password.');
     }
 
     user.attempts = 0;
