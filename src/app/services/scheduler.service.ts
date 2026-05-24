@@ -1,31 +1,29 @@
 import { Injectable } from '@angular/core';
+
 import { Algorithm, GanttBlock, Process } from '../models/scheduler.model';
+
 import type { SimulationResult } from '../models/scheduler.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class SchedulerService {
   simulate(processes: Process[], algorithm: Algorithm): SimulationResult {
-    const copiedProcesses = [];
+    const copiedProcesses = processes.map((process) => ({ ...process }));
 
-    for (let i = 0; i < processes.length; i++) {
-      copiedProcesses.push({ ...processes[i] });
+    switch (algorithm) {
+      case 'FCFS':
+        return this.fcfs(copiedProcesses);
+
+      case 'SJF':
+        return this.sjf(copiedProcesses);
+
+      case 'Priority':
+        return this.priority(copiedProcesses);
+
+      default:
+        return this.fcfs(copiedProcesses);
     }
-
-    if (algorithm === 'FCFS') {
-      return this.fcfs(copiedProcesses);
-    }
-
-    if (algorithm === 'SJF') {
-      return this.sjf(copiedProcesses);
-    }
-
-    if (algorithm === 'Priority') {
-      return this.priority(copiedProcesses);
-    }
-
-    return this.fcfs(copiedProcesses);
   }
 
   private fcfs(processes: Process[]): SimulationResult {
@@ -34,9 +32,7 @@ export class SchedulerService {
 
     let currentTime = 0;
 
-    for (let i = 0; i < sortedProcesses.length; i++) {
-      const process = sortedProcesses[i];
-
+    for (const process of sortedProcesses) {
       if (currentTime < process.arrivalTime) {
         currentTime = process.arrivalTime;
       }
@@ -44,6 +40,7 @@ export class SchedulerService {
       const startTime = currentTime;
       const completionTime = startTime + process.burstTime;
       this.finishProcess(process, startTime, completionTime);
+
       this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
 
       currentTime = completionTime;
@@ -51,57 +48,41 @@ export class SchedulerService {
 
     return {
       processes: sortedProcesses,
-      ganttBlocks
+      ganttBlocks,
     };
   }
 
   private sjf(processes: Process[]): SimulationResult {
     const sortedProcesses = this.sortByArrival(processes);
-
     const completedProcesses: Process[] = [];
+
     const ganttBlocks: GanttBlock[] = [];
 
     let currentTime = 0;
 
     while (completedProcesses.length < sortedProcesses.length) {
-      const availableProcesses: Process[] = [];
-
-      for (let i = 0; i < sortedProcesses.length; i++) {
-        const process = sortedProcesses[i];
-        if (
-          process.arrivalTime <= currentTime &&
-          !completedProcesses.includes(process)
-        ) {
-          availableProcesses.push(process);
-        }
-      }
+      const availableProcesses = sortedProcesses.filter(
+        (process) => process.arrivalTime <= currentTime && !completedProcesses.includes(process),
+      );
 
       if (availableProcesses.length === 0) {
-        for (let i = 0; i < sortedProcesses.length; i++) {
-          if (!completedProcesses.includes(sortedProcesses[i])) {
-            currentTime = sortedProcesses[i].arrivalTime;
-            break;
-          }
+        const nextProcess = sortedProcesses.find(
+          (process) => !completedProcesses.includes(process),
+        );
+
+        if (nextProcess) {
+          currentTime = nextProcess.arrivalTime;
         }
+
         continue;
       }
 
-      const sortedAvailableProcesses = this.quickSort(
-        availableProcesses,
-        'burstTime'
-      );
-
-      const process = sortedAvailableProcesses[0];
+      const process = availableProcesses.sort((a, b) => a.burstTime - b.burstTime)[0];
       const startTime = currentTime;
       const completionTime = startTime + process.burstTime;
       this.finishProcess(process, startTime, completionTime);
 
-      this.addGanttBlock(
-        ganttBlocks,
-        process.id,
-        startTime,
-        completionTime
-      );
+      this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
 
       completedProcesses.push(process);
       currentTime = completionTime;
@@ -109,7 +90,7 @@ export class SchedulerService {
 
     return {
       processes: sortedProcesses,
-      ganttBlocks
+      ganttBlocks,
     };
   }
 
@@ -117,49 +98,34 @@ export class SchedulerService {
     const sortedProcesses = this.sortByArrival(processes);
 
     const completedProcesses: Process[] = [];
+
     const ganttBlocks: GanttBlock[] = [];
 
     let currentTime = 0;
 
     while (completedProcesses.length < sortedProcesses.length) {
-      const availableProcesses: Process[] = [];
-
-      for (let i = 0; i < sortedProcesses.length; i++) {
-        const process = sortedProcesses[i];
-        if (
-          process.arrivalTime <= currentTime &&
-          !completedProcesses.includes(process)
-        ) {
-          availableProcesses.push(process);
-        }
-      }
+      const availableProcesses = sortedProcesses.filter(
+        (process) => process.arrivalTime <= currentTime && !completedProcesses.includes(process),
+      );
 
       if (availableProcesses.length === 0) {
-        for (let i = 0; i < sortedProcesses.length; i++) {
-          if (!completedProcesses.includes(sortedProcesses[i])) {
-            currentTime = sortedProcesses[i].arrivalTime;
-            break;
-          }
+        const nextProcess = sortedProcesses.find(
+          (process) => !completedProcesses.includes(process),
+        );
+
+        if (nextProcess) {
+          currentTime = nextProcess.arrivalTime;
         }
+
         continue;
       }
 
-      const sortedAvailableProcesses = this.quickSort(
-        availableProcesses,
-        'priority'
-      );
-
-      const process = sortedAvailableProcesses[0];
+      const process = availableProcesses.sort((a, b) => a.priority - b.priority)[0];
       const startTime = currentTime;
       const completionTime = startTime + process.burstTime;
       this.finishProcess(process, startTime, completionTime);
 
-      this.addGanttBlock(
-        ganttBlocks,
-        process.id,
-        startTime,
-        completionTime
-      );
+      this.addGanttBlock(ganttBlocks, process.id, startTime, completionTime);
 
       completedProcesses.push(process);
       currentTime = completionTime;
@@ -167,34 +133,12 @@ export class SchedulerService {
 
     return {
       processes: sortedProcesses,
-      ganttBlocks
+      ganttBlocks,
     };
   }
 
-  private quickSort(processes: Process[], key: keyof Process): Process[] {
-    if (processes.length <= 1) {
-      return processes;
-    }
-
-    const pivot = processes[processes.length - 1];
-
-    const left: Process[] = [];
-
-    const right: Process[] = [];
-
-    for (let i = 0; i < processes.length - 1; i++) {
-      if (Number(processes[i][key]) < Number(pivot[key])) {
-        left.push(processes[i]);
-      } else {
-        right.push(processes[i]);
-      }
-    }
-
-    return [...this.quickSort(left, key), pivot, ...this.quickSort(right, key)];
-  }
-
   private sortByArrival(processes: Process[]): Process[] {
-    return this.quickSort(processes, 'arrivalTime');
+    return processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
   }
 
   private finishProcess(process: Process, startTime: number, completionTime: number): void {
@@ -208,7 +152,7 @@ export class SchedulerService {
     ganttBlocks: GanttBlock[],
     processId: number,
     startTime: number,
-    completionTime: number
+    completionTime: number,
   ): void {
     const lastBlock = ganttBlocks[ganttBlocks.length - 1];
 
@@ -221,7 +165,7 @@ export class SchedulerService {
     ganttBlocks.push({
       processId,
       startTime,
-      completionTime
+      completionTime,
     });
   }
 }
