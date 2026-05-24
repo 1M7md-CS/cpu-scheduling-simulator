@@ -10,7 +10,7 @@ type Data = {
 
 @Component({
   selector: 'app-register',
-  imports: [Form, Form],
+  imports: [Form],
   templateUrl: './register.html',
 })
 export class Register {
