@@ -10,7 +10,7 @@ type Data = {
 
 @Component({
   selector: 'app-login',
-  imports: [Form, Form],
+  imports: [Form],
   templateUrl: './login.html',
 })
 export class Login {
