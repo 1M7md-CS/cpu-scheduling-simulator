@@ -38,15 +38,10 @@ export class AuthenticateService {
     return email.trim().toLowerCase();
   }
 
-  private normalizePassword(password: string): string {
-    return password.trim();
-  }
-
   async register(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = this.normalizeEmail(email);
-    const normalizedPassword = this.normalizePassword(password);
 
-    if (!normalizedEmail || !normalizedPassword) {
+    if (!normalizedEmail || !password) {
       return this.fail('Email and password are required.');
     }
 
@@ -54,7 +49,7 @@ export class AuthenticateService {
       return this.fail('Please enter a valid email address.');
     }
 
-    if (normalizedPassword.length < 6) {
+    if (password.length < 6) {
       return this.fail('Password must be at least 6 characters.');
     }
 
@@ -66,7 +61,7 @@ export class AuthenticateService {
       return this.fail('Email already registered.');
     }
 
-    const passwordHash = await bcrypt.hash(normalizedPassword, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     users.push({
       email: normalizedEmail,
@@ -83,9 +78,8 @@ export class AuthenticateService {
 
   async login(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = this.normalizeEmail(email);
-    const normalizedPassword = this.normalizePassword(password);
 
-    if (!normalizedEmail || !normalizedPassword) {
+    if (!normalizedEmail || !password) {
       return this.fail('Email and password are required.');
     }
 
@@ -104,7 +98,7 @@ export class AuthenticateService {
       return this.fail(`Too many attempts. Try again in ${seconds} seconds.`);
     }
 
-    const passwordIsValid = await bcrypt.compare(normalizedPassword, user.passwordHash);
+    const passwordIsValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordIsValid) {
       user.attempts++;
